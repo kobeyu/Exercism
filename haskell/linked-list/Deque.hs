@@ -1,53 +1,41 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE RecursiveDo #-}
 module Deque (mkDeque, push, pop, shift, unshift) where
 import Control.Concurrent.STM(atomically,STM)
-import Control.Concurrent.STM.TMVar(TMVar,readTMVar,swapTMVar,newTMVar,newEmptyTMVar,putTMVar)
-import Control.Monad(void)
+import Control.Concurrent.STM.TVar
 
-data Deque a = MkDeque {front,back :: TMVar (DoubleList a)}
+data Deque a = MkDeque {front,back :: DoubleList a}
 
-data DoubleList a = EndL {next :: TMVar (DoubleList a)} 
-                  | EndR {prev :: TMVar (DoubleList a)}
-                  | Cons {_this :: a, prev,next :: TMVar (DoubleList a)}
+data DoubleList a = EndL {next :: TVar (DoubleList a)} 
+                  | EndR {prev :: TVar (DoubleList a)}
+                  | Cons {_this :: a, prev,next :: TVar (DoubleList a)}
 
 mkDeque :: IO (Deque a)
-mkDeque = atomically $ do 
-	t1 <- newEmptyTMVar
-	t2 <- newEmptyTMVar
-	let left = EndL t2
-	let	right = EndR t1
-	putTMVar t1 left
-	putTMVar t2 right
-	f <- newTMVar left
-	b <- newTMVar right
-	return $ MkDeque f b
+mkDeque = atomically $ mdo 
+    t1 <- newTVar (EndL t2)
+    t2 <- newTVar (EndR t1)
+    return $ MkDeque (EndL t2) (EndR t1)
 
-insert :: DoubleList a -> a -> STM ()
-insert nextItem a = do
-	prevItem <- readTMVar (prev nextItem)
-	prevPtr <- newTMVar prevItem
-	nextPtr <- newTMVar nextItem
+insert :: a -> DoubleList a -> STM ()
+insert a nextItem = do
+	prevItem <- readTVar (prev nextItem)
+	prevPtr <- newTVar prevItem
+	nextPtr <- newTVar nextItem
 	let newItem = Cons a prevPtr nextPtr
-	void $ swapTMVar (prev nextItem) newItem
-	void $ swapTMVar (next prevItem) newItem
+	writeTVar (prev nextItem) newItem
+	writeTVar (next prevItem) newItem
 
 delete :: DoubleList a -> STM ()
 delete t = do
-	prevItem <- readTMVar (prev t)
-	nextItem <- readTMVar (next t)
-	void $ swapTMVar (prev nextItem) prevItem
-	void $ swapTMVar (next prevItem) nextItem
+	prevItem <- readTVar (prev t)
+	nextItem <- readTVar (next t)
+	writeTVar (prev nextItem) prevItem
+	writeTVar (next prevItem) nextItem
 
 unshift :: Deque a -> a -> IO ()
-unshift d a = atomically $ do
-	marker <- readTMVar (front d)
-	oldHead <- readTMVar (next marker)
-	insert oldHead a
+unshift d a = atomically $ readTVar (next (front d)) >>= insert a
 
 push :: Deque a -> a -> IO ()
-push d a = atomically $ do
-	marker <- readTMVar (back d)
-	insert marker a
+push d a = atomically $ insert a (back d)
 
 deleteCons :: DoubleList a -> STM (Maybe a)
 deleteCons l = case l of 
@@ -55,11 +43,7 @@ deleteCons l = case l of
 	_          -> return Nothing
 
 pop :: Deque a -> IO (Maybe a)
-pop d = atomically $ do
-	e <- readTMVar (back d)
-	readTMVar (prev e) >>= deleteCons
+pop d = atomically $ readTVar (prev (back d)) >>= deleteCons
 
 shift :: Deque a -> IO (Maybe a)
-shift d = atomically $ do
-	e <- readTMVar (front d)
-	readTMVar (next e) >>= deleteCons
+shift d = atomically $ readTVar (next (front d)) >>= deleteCons
