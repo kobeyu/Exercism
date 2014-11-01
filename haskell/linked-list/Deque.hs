@@ -1,52 +1,64 @@
+{-# LANGUAGE RecursiveDo, ScopedTypeVariables #-}
 module Deque (mkDeque, push, pop, shift, unshift) where
-import           Control.Applicative         ((<$>))
-import           Control.Concurrent.STM      (STM, atomically)
+import           Control.Applicative         ((<$>),(<*>))
+import           Control.Concurrent.STM      (atomically,STM)
 import           Control.Concurrent.STM.TVar (TVar, newTVar, readTVar,
                                               writeTVar)
-import           Control.Monad               (liftM2)
-import           Data.Maybe                  (fromMaybe)
-import           Data.Tuple                  (swap)
+import Control.Monad((<=<),(>=>))
 
-type Ref a = TVar (Maybe (DoubleList a))
---In these tuples, fst is start/next, and snd is end/prev.
-type Deque a = (Ref a,Ref a)
-data DoubleList a = Cons {_this :: a, links :: (Ref a,Ref a)}
+data Circle a = Node {this :: a, prev,next :: TVar(Circle a)}
+
+instance Eq (Circle a) where
+	(Node _ p n) == (Node _ p' n') = (p,n) == (p',n')
+
+mkCircle :: a -> STM (Circle a)
+mkCircle a = mdo
+	i <- Node a <$> newTVar i <*> newTVar i
+	return i
+
+insert :: a -> Circle a -> STM (Circle a)
+insert a nextItem = do
+	prevItem <- readTVar (prev nextItem)
+	newItem <- Node a <$> newTVar prevItem <*> newTVar nextItem
+	writeTVar (prev nextItem) newItem
+	writeTVar (next prevItem) newItem
+	return newItem
+
+delete :: Circle a -> STM (Maybe a, Maybe (Circle a))
+delete c = do
+	nextItem <- readTVar (next c)
+	if nextItem == c then 
+		return (Just (this c),Nothing)
+	else do
+		prevItem <- readTVar (prev c)
+		writeTVar (next prevItem) nextItem
+		writeTVar (prev nextItem) prevItem
+		return (Just (this c), Just nextItem)
+
+
+newtype Deque a = MkDeque (TVar (Maybe (Circle a)))
 
 mkDeque :: IO (Deque a)
-mkDeque = atomically $ liftM2 (,) (newTVar Nothing) (newTVar Nothing)
+mkDeque = atomically $ MkDeque <$> newTVar Nothing 
 
-type Direction a = (Ref a,Ref a) -> (Ref a,Ref a)
-
-insert :: Direction a -> Deque a -> a -> STM ()
-insert dir d a = do
-	let (start,end) = dir d
-	maybeNextItem <- readTVar start
-	newItem <- (Cons a . dir) <$> liftM2 (,) (newTVar maybeNextItem) (newTVar Nothing)
-	let backRef = fromMaybe end (snd . dir . links <$> maybeNextItem)
-	writeTVar backRef (Just newItem)
-	writeTVar start (Just newItem)
-
-delete :: Direction a -> Deque a -> STM (Maybe a)
-delete dir d = do
-	let (start,end) = dir d
-	maybeToRemove <- readTVar start
-	case maybeToRemove of
-		Nothing -> return Nothing
-		Just (Cons i l) -> do
-			newEnd <- readTVar (fst . dir $ l)
-			let backRef = fromMaybe end (snd . dir . links <$> newEnd)
-			writeTVar start newEnd
-			writeTVar backRef newEnd
-			return (Just i)
+pushnshift :: (Circle a -> STM (Circle a)) -> Deque a -> a -> IO ()
+pushnshift f (MkDeque l) a = atomically $ 
+	readTVar l >>=
+	maybe (mkCircle a) (insert a >=> f) >>= writeTVar l . Just
 
 unshift :: Deque a -> a -> IO ()
-unshift = (atomically .) . insert id
+unshift = pushnshift return
 
 push :: Deque a -> a -> IO ()
-push = (atomically .) . insert swap
+push = pushnshift (readTVar . next)
+
+popshift :: (Circle a -> STM (Circle a)) -> Deque a -> IO (Maybe a)
+popshift f (MkDeque l) = atomically $ do
+    (r,n) <- readTVar l >>= maybe (return (Nothing,Nothing)) (delete <=< f)
+    writeTVar l n >> return r
 
 shift :: Deque a -> IO (Maybe a)
-shift = atomically . delete id
+shift = popshift return 
 
 pop :: Deque a -> IO (Maybe a)
-pop = atomically . delete swap
+pop = popshift (readTVar . prev)
