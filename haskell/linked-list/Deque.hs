@@ -1,10 +1,10 @@
-{-# LANGUAGE RecursiveDo, ScopedTypeVariables #-}
+{-# LANGUAGE RecursiveDo #-}
 module Deque (mkDeque, push, pop, shift, unshift) where
-import           Control.Applicative         ((<$>),(<*>))
-import           Control.Concurrent.STM      (atomically,STM)
+import           Control.Applicative         ((<$>), (<*>))
+import           Control.Concurrent.STM      (STM, atomically)
 import           Control.Concurrent.STM.TVar (TVar, newTVar, readTVar,
                                               writeTVar)
-import Control.Monad((<=<),(>=>))
+import           Control.Monad               ((<=<), (>=>))
 
 data Circle a = Node {this :: a, prev,next :: TVar(Circle a)}
 
@@ -27,7 +27,7 @@ insert a nextItem = do
 delete :: Circle a -> STM (Maybe a, Maybe (Circle a))
 delete c = do
 	nextItem <- readTVar (next c)
-	if nextItem == c then 
+	if nextItem == c then
 		return (Just (this c),Nothing)
 	else do
 		prevItem <- readTVar (prev c)
@@ -39,10 +39,10 @@ delete c = do
 newtype Deque a = MkDeque (TVar (Maybe (Circle a)))
 
 mkDeque :: IO (Deque a)
-mkDeque = atomically $ MkDeque <$> newTVar Nothing 
+mkDeque = atomically $ MkDeque <$> newTVar Nothing
 
 pushnshift :: (Circle a -> STM (Circle a)) -> Deque a -> a -> IO ()
-pushnshift f (MkDeque l) a = atomically $ 
+pushnshift f (MkDeque l) a = atomically $
 	readTVar l >>=
 	maybe (mkCircle a) (insert a >=> f) >>= writeTVar l . Just
 
@@ -58,7 +58,7 @@ popshift f (MkDeque l) = atomically $ do
     writeTVar l n >> return r
 
 shift :: Deque a -> IO (Maybe a)
-shift = popshift return 
+shift = popshift return
 
 pop :: Deque a -> IO (Maybe a)
 pop = popshift (readTVar . prev)
