@@ -21,7 +21,7 @@ main :: IO ()
 main = exitProperly $ runTestTT $ TestList
        [ TestList customSetTests ]
 
-intSet :: [Int] -> CustomSet Int
+intSet :: [Int] ->  CustomSet Int
 intSet = S.fromList
 
 customSetTests :: [Test]
@@ -29,9 +29,9 @@ customSetTests =
   [ testCase "Show" $ do
     "fromList []" @=? show (S.empty :: CustomSet Int)
     "fromList [1,2,3]" @=? show (intSet [1, 2, 3])
-  , testCase "delete" $ do
+  , testCase "delete" $ 
     intSet [1, 3] @=? S.delete 2 (intSet [1, 2, 3])
-  , testCase "difference" $ do
+  , testCase "difference" $ 
     intSet [1, 3] @=? intSet [1, 2, 3] `S.difference` intSet [2, 4]
   , testCase "isDisjointFrom" $ do
     True @=? intSet [] `S.isDisjointFrom` intSet []

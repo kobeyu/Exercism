@@ -25,6 +25,9 @@ schoolTests :: [Test]
 schoolTests =
   [ testCase "add student" $
     [(2, ["Aimee"])] @=? S.sorted (S.add 2 "Aimee" S.empty)
+  , testCase "Duplicate names" $
+    [(2, ["Alice","Bob","Bob"])] @=? S.sorted
+    (gradeWithStudents 2 ["Bob","Alice","Bob"])
   , testCase "add more students in same class" $
     [(2, ["Blair", "James", "Paul"])] @=? S.sorted
     (gradeWithStudents 2 ["James", "Blair", "Paul"])
