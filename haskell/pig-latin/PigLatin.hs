@@ -1,10 +1,12 @@
 module PigLatin(translate) where
+import Data.Tuple(swap)
 
 translate :: String -> String
-translate = unwords . map tr . words
+translate = unwords . map ((++"ay") . qu . tr) . words
+
+qu :: String -> String
+qu ('u':xs) | last xs == 'q' = xs ++ "u"
+qu x = x
 
 tr :: String -> String
-tr ('q':'u':xs) = xs ++ "quay"
-tr (x:xs)
-   | x `elem` "aeiou" = (x:xs) ++ "ay"
-   | otherwise = tr (xs ++ [x])
+tr = uncurry (++) . swap . break (`elem` "aeiou")
