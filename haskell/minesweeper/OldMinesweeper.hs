@@ -2,15 +2,9 @@
 module Minesweeper (annotate) where
 import Data.Char(intToDigit)
 import Data.List(transpose)
-import qualified Data.Vector as V
-
-type Board a = V.Vector (V.Vector a)
 
 annotate :: [String] -> [String]
-annotate = (map . map) (uncurry write) . annotateWithNeighbours . toBoard
-
-toBoard :: [String] -> Board Char
-toBoard = V.fromList . map V.fromList
+annotate = (map . map) (uncurry write) . annotateWithNeighbours ' '
 
 shiftleft :: [[a]] -> [[a]]
 shiftleft = map tail
@@ -26,11 +20,11 @@ allShifts b = [shiftup . shiftleft    , shiftup    , shiftup . shiftright b
               ,shiftleft                           , shiftright b
               ,shiftdown b . shiftleft, shiftdown b, shiftdown b . shiftright b]
 
-applyShifts :: Board a -> Board [a]
+applyShifts :: a -> [[a]] -> [[[a]]]
 applyShifts b = map transpose . transpose . sequence (allShifts b)
 
-annotateWithNeighbours :: Board Char ->  Board (Char,Int)
-annotateWithNeighbours l = zipWith zip l (applyShifts l)
+annotateWithNeighbours :: a -> [[a]] -> [[(a,[a])]]
+annotateWithNeighbours b l = zipWith zip l (applyShifts b l)
 
 write :: Char -> String -> Char
 write '*' = const '*'
