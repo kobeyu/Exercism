@@ -1,8 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 module Palindromes(largestPalindrome,smallestPalindrome) where
-import Control.Monad (ap)
-import Data.Function (on)
-import Data.List (groupBy,foldl',genericLength)
+import           Data.List (foldl', genericLength)
 
 type PalinResult a = (a,[(a,a)])
 
@@ -23,11 +21,9 @@ palindromesOfLength dir n
     | m == 1 = concatMap makeOdds ds
     where
         (h,m) = n `divMod` 2
-        order = (if dir == Asc then id else reverse)
+        order = if dir == Asc then id else reverse
         ds = order [10^(h-1)..(10^h) - 1]
-        makeEven :: Integral a => a -> a
-        makeEven = (undigits 10) . (\x -> x ++ reverse x) . digits 10 []
-        makeOdds :: Integral a => a -> [a]
+        makeEven = undigits 10 . (\x -> x ++ reverse x) . digits 10 []
         makeOdds = (\s -> [undigits 10 $ s ++ [mid] ++ reverse s | mid <- order [0..9]]) . digits 10 []
 
 palindromes :: (Integral a) => Dir -> a -> a -> [a]
