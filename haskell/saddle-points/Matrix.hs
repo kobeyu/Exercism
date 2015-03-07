@@ -1,24 +1,23 @@
 module Matrix (saddlePoints) where
 import Data.Array.IArray
-import Data.Function(on)
 import Control.Arrow((&&&))
-import Data.List(minimumBy,maximumBy,intersect,group,sort,groupBy)
-import Debug.Trace
+import Data.List(intersect)
+import Data.Map(Map,toAscList,toDescList,fromListWith)
 
-minimums :: (Ord a) => (a -> a -> Bool) -> [a] -> [a]
-minimums f = head . groupBy f . sort
+toMap :: (Ord b) => (a -> b) -> [a] -> Map b [a]
+toMap f = fromListWith (++) . map (f&&&(:[]))
 
-maximums :: (Ord a) => (a -> a -> Bool) -> [a] -> [a]
-maximums f = head . groupBy f . reverse . sort
+minimumsBy :: (Ord b) => (a -> b) -> [a] -> [a]
+minimumsBy f = snd . head . toAscList . toMap f
 
-saddlePoints :: (IArray a e, Ord e) => a (Int,Int) e -> [(Int,Int)]
-saddlePoints a = intersect maxRows minCols 
+maximumsBy :: (Ord b) => (a -> b) -> [a] -> [a]
+maximumsBy f = snd . head . toDescList . toMap f
+
+saddlePoints :: (IArray a e, Ord e,Show e) => a (Int,Int) e -> [(Int,Int)]
+saddlePoints a = maxRows `intersect` minCols
     where
-        maxRows :: [(Int,Int)]
-        maxRows = _snd $ maximums ((==) `on` fst) (c rows)
-        minCols :: [(Int,Int)]
-        minCols = _snd $ minimums ((==) `on` fst) (c cols)
-        cols = map (zip [minX..maxX] . repeat) [minY..maxY]
-        c = map ((a!) &&& id)
-        rows = map (flip zip [minY..maxY] . repeat) [minX..maxX]
         ((minX,minY),(maxX,maxY)) = bounds a
+        rows = map (flip zip [minY..maxY] . repeat) [minX..maxX]
+        cols = map (zip [minX..maxX] . repeat ) [minY..maxY]
+        maxRows = concatMap (maximumsBy (a!)) rows
+        minCols = concatMap (minimumsBy (a!)) cols
