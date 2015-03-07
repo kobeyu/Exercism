@@ -10,10 +10,8 @@ mkTriplet x y z
     | otherwise = NoTrip
     where [a,b,c] = sort [x,y,z]
 
-isPythagorean :: Trip a -> Bool
-isPythagorean NoTrip = False
-isPythagorean _ = True
+isPythagorean :: Eq a => Trip a -> Bool
+isPythagorean = (NoTrip /=)
 
 pythagoreanTriplets :: Integral a => a -> a -> [Trip a]
 pythagoreanTriplets lo hi = [Trip a b | a <- [lo..hi], b <- [a..hi], let c2 = a*a+b*b, c2 <= hi*hi, isSquare' c2 ]
-
