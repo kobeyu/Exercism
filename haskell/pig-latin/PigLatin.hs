@@ -5,7 +5,7 @@ translate :: String -> String
 translate = unwords . map ((++"ay") . qu . tr) . words
 
 qu :: String -> String
-qu ('u':xs) | last xs == 'q' = xs ++ "u"
+qu ('u':xs) | xs /= [] && last xs == 'q' = xs ++ "u"
 qu x = x
 
 tr :: String -> String

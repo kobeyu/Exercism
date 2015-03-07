@@ -6,7 +6,7 @@ data Trip a = Trip a a | NoTrip deriving (Show,Eq)
 
 mkTriplet :: (Ord a, Num a) => a -> a -> a -> Trip a
 mkTriplet x y z
-    | a^2 + b^2 == c^2 = Trip a b
+    | a*a + b*b == c*c = Trip a b
     | otherwise = NoTrip
     where [a,b,c] = sort [x,y,z]
 
@@ -15,5 +15,5 @@ isPythagorean NoTrip = False
 isPythagorean _ = True
 
 pythagoreanTriplets :: Integral a => a -> a -> [Trip a]
-pythagoreanTriplets min max = [Trip a b | a <- [min..max], b <- [a..max], let c2 = a^2+b^2, c2 <= max^2, isSquare' c2 ]
+pythagoreanTriplets lo hi = [Trip a b | a <- [lo..hi], b <- [a..hi], let c2 = a*a+b*b, c2 <= hi*hi, isSquare' c2 ]
 
