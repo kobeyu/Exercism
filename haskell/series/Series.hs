@@ -1,7 +1,7 @@
 module Series(slices) where
 
 lengthIsAtLeast :: Int -> [a] -> Bool
-lengthIsAtLeast t = (>=t) . length . take (t+1)
+lengthIsAtLeast t = (==t) . length . take t
 
 readChar :: (Integral a) => Char -> a
 readChar = fromIntegral . subtract (fromEnum '0') . fromEnum
