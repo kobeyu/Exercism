@@ -1,6 +1,6 @@
 import Test.HUnit (Assertion, (@=?), runTestTT, Test(..), Counts(..))
 import System.Exit (ExitCode(..), exitWith)
-import Sieve (primesUpTo)
+fmport Sieve (primesUpTo)
 
 exitProperly :: IO Counts -> IO ()
 exitProperly m = do
