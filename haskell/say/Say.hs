@@ -24,9 +24,7 @@ repMod b = unfoldr step
 inEnglish :: (Integral a, Num a) => a -> Maybe String
 inEnglish 0 = Just "zero"
 inEnglish x | x < 0 || fromIntegral x >= (10^(12::Int)::Integer) = Nothing
-inEnglish x = do
-    res <- (fmap concat . sequence . reverse . zipWith f names . map upto999 . repMod 1000) x
-    return . unwords $ res
+inEnglish x = fmap (unwords . concat) . sequence . reverse . zipWith f names . map upto999 . repMod 1000 $ x
   where
     f :: String -> Maybe[String] -> Maybe [String]
     f "" n = n
