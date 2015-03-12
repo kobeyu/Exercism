@@ -1,9 +1,7 @@
 module Sieve (primesUpTo) where
 import Control.Monad(filterM)
-import Data.STRef
-import Control.Loop
-import qualified Data.Vector as V(elemIndices,create,toList,findIndex,freeze)
-import qualified Data.Vector.Mutable as MV(replicate,write,slice,read)
+import qualified Data.Vector as V(elemIndices,create,toList)
+import qualified Data.Vector.Mutable as MV(replicate,write,read)
 
 primesUpTo ::  Int -> [Int]
 primesUpTo n = V.toList . V.elemIndices True $ V.create $ do
