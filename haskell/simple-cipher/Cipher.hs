@@ -1,14 +1,22 @@
 module Cipher(caesarEncode, caesarDecode, caesarEncodeRandom) where
+import Control.Monad(replicateM)
+import System.Random(randomRIO)
+import Control.Arrow((&&&))
+import Data.Functor((<$>))
+import Data.Function(on)
 
-f :: Char -> Char -> Char
-f k v = toEnum (fromEnum 'a' + ((fromEnum v + fromEnum k) `mod` 26))
+c2i :: Char -> Int
+c2i = subtract (fromEnum 'a') . fromEnum
+
+i2c :: Int -> Char
+i2c = toEnum . (fromEnum 'a' +) . (`mod` 26)
 
 caesarEncode :: String -> String -> String
-caesarEncode key text = zipWith f (cycle key) text
+caesarEncode = (map i2c .) . zipWith ((+) `on` c2i) . cycle
 
 caesarDecode :: String -> String -> String
-caesarDecode = undefined
+caesarDecode = (map i2c .) . zipWith (subtract `on` c2i) . cycle
 
 caesarEncodeRandom :: String -> IO (String,String)
-caesarEncodeRandom = undefined
+caesarEncodeRandom s = (id&&&flip caesarEncode s) <$> replicateM 100 (randomRIO ('a','z'))
 

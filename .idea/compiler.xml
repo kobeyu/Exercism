@@ -20,4 +20,7 @@
       </profile>
     </annotationProcessing>
   </component>
+  <component name="HaskellBuildOptions">
+    <cabalPath>C:\Users\Greg\AppData\Roaming\cabal\bin\cabal.exe</cabalPath>
+  </component>
 </project>
