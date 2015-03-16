@@ -1,7 +1,7 @@
 module Connect(resultFor, Color(Black, White)) where
 import Data.List(transpose)
 import qualified Data.Array as A(array,bounds,(!),assocs, Array() )
-import qualified Data.Set as S(toList,fromList,Set(),map)
+import qualified Data.Set as S(toList,fromList,Set(),map,null,filter)
 
 data Color = Black | White deriving (Eq,Show)
 
@@ -24,12 +24,12 @@ neighbours (x,y) ((minX,minY),(maxX,maxY))
 lrConnect :: Board -> Bool
 lrConnect b = f leftCol
     where
-        leftCol = S.fromList . map fst . filter (\((a,_),e) -> a == 1 && e) . A.assocs $ b
+        leftCol = S.fromList [(x,y) | ((x,y),e) <- A.assocs b, x == 1 && e]
         ((_,_),(maxX,_)) = A.bounds b
         f :: S.Set (Int,Int) -> Bool
         f connected = good || (newConnected /= connected && f newConnected)
             where
-            good = any ((==maxX) . fst) $ S.toList newConnected
+            good = not . S.null . S.filter ((==maxX) . fst) $ newConnected
             newConnected = S.fromList [p | c <- S.toList connected, p <- neighbours c (A.bounds b), b A.! p]
 
 whiteWin :: [String] -> Bool
