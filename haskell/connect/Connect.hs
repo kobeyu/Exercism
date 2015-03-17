@@ -8,8 +8,11 @@ type CellLoc = (Int,Int)
 type Board = (Int,S.Set CellLoc)
 
 mkBoard :: Char -> (CellLoc -> CellLoc) -> [String] -> Board
-mkBoard c f s = (width, S.fromList [f (x,y) | (y,r) <- zip [1..] s, (x,e) <- zip [1..] r, e == c])
-    where width = length . head $ s
+mkBoard _ _ [] = (0,S.empty)
+mkBoard c f s = (width,set)
+    where
+        width = fst . f $ (length . head $ s,length s)
+        set = S.fromList [f (x,y) | (y,r) <- zip [1..] s, (x,e) <- zip [1..] r, e == c]
 
 neighboursWhere :: (CellLoc -> Bool) -> CellLoc -> S.Set CellLoc
 neighboursWhere predicate (x,y)
