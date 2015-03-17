@@ -1,7 +1,8 @@
 module Connect(resultFor, Color(Black, White)) where
 import Data.List(transpose)
-import qualified Data.Array as A(array,bounds,(!),assocs, Array() )
-import qualified Data.Set as S(toList,fromList,Set(),map,null,filter)
+import qualified Data.Array as A
+import qualified Data.Set as S
+import Control.Monad(liftM2)
 
 data Color = Black | White deriving (Eq,Show)
 
@@ -15,22 +16,24 @@ mkBoard c s = A.array ((1,1),(width,height)) assocs
         width = length $ head s
         assocs = [((x,y),e == c) | (y,r) <- zip [1..] s, (x,e) <- zip [1..] r]
 
-neighbours :: CellLoc -> (CellLoc,CellLoc) -> [CellLoc]
-neighbours (x,y) ((minX,minY),(maxX,maxY))
-    = [(x',y') | x' <- [x-1,x,x+1],y' <- [y-1,y,y+1]
-                 , x' >= minX, x' <= maxX, y' >= minY, y' <= maxY
-                 , (x',y') `notElem` [(x-1,y-1),(x+1,y+1)]]
+neighboursWhere :: (CellLoc -> Bool) -> CellLoc -> S.Set CellLoc
+neighboursWhere predicate (x,y)
+    = S.fromList . filter predicate $ [(x-1,y), (x-1,y+1), (x,y-1), (x,y+1), (x+1,y-1), (x+1,y)]
+
+(&&&) :: (a -> Bool) -> (a -> Bool) -> a -> Bool
+(&&&) = liftM2 (&&)
 
 lrConnect :: Board -> Bool
 lrConnect b = f leftCol
     where
         leftCol = S.fromList [(x,y) | ((x,y),e) <- A.assocs b, x == 1 && e]
-        ((_,_),(maxX,_)) = A.bounds b
+        bnds@((_,_),(maxX,_)) = A.bounds b
         f :: S.Set (Int,Int) -> Bool
         f connected = good || (newConnected /= connected && f newConnected)
             where
             good = not . S.null . S.filter ((==maxX) . fst) $ newConnected
-            newConnected = S.fromList [p | c <- S.toList connected, p <- neighbours c (A.bounds b), b A.! p]
+            expand = S.union . neighboursWhere (A.inRange bnds &&& (b A.!))
+            newConnected = S.foldr' expand connected connected
 
 whiteWin :: [String] -> Bool
 whiteWin = lrConnect . mkBoard 'O' . transpose
