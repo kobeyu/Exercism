@@ -1,5 +1,5 @@
 module Connect(resultFor, Color(Black, White)) where
-import Data.List(transpose)
+import Data.Tuple(swap)
 import qualified Data.Set as S
 
 data Color = Black | White deriving (Eq,Show)
@@ -7,8 +7,8 @@ data Color = Black | White deriving (Eq,Show)
 type CellLoc = (Int,Int)
 type Board = (Int,S.Set CellLoc)
 
-mkBoard :: Char -> [String] -> Board
-mkBoard c s = (width, S.fromList [(x,y) | (y,r) <- zip [1..] s, (x,e) <- zip[1..] r, e == c])
+mkBoard :: Char -> (CellLoc -> CellLoc) -> [String] -> Board
+mkBoard c f s = (width, S.fromList [f (x,y) | (y,r) <- zip [1..] s, (x,e) <- zip [1..] r, e == c])
     where width = length . head $ s
 
 neighboursWhere :: (CellLoc -> Bool) -> CellLoc -> S.Set CellLoc
@@ -27,10 +27,10 @@ lrConnect (wid,b) = f leftCol
             newConnected = S.foldr' expand connected connected
 
 whiteWin :: [String] -> Bool
-whiteWin = lrConnect . mkBoard 'O' . transpose
+whiteWin = lrConnect . mkBoard 'O' swap
 
 blackWin :: [String] -> Bool
-blackWin = lrConnect . mkBoard 'X'
+blackWin = lrConnect . mkBoard 'X' id
 
 resultFor :: [String] -> Maybe Color
 resultFor b
